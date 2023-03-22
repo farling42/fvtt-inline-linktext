@@ -22,6 +22,10 @@ const DISPLAY_PARAGRAPH = 1;
 const DISPLAY_ALL       = 2;
 let DisplayAmount = DISPLAY_ALL;
 
+const STYLE_DEFAULT = "inlineDocument";
+const STYLE_NONE    = "inlineNone";
+let InlineStyle     = STYLE_DEFAULT;
+
 function findSection(html,sectionid) {
 	let result="";
 	if (html.hasChildNodes()) {
@@ -118,9 +122,9 @@ async function _myenrichHTMLasync(wrapped, content, options) {
 					}
 				}
 
+				let element = 'span';
 				if (!extratext.startsWith('<')) {
 					// No HTML formatting, so put it in a single span
-					extratext = `<span class="inlineDocument inline${doctype}">` + extratext + '</span>';
 				} else if (extratext.startsWith('<p>') && 
 						extratext.endsWith('</p>') &&
 					 	extratext.lastIndexOf('<p>') === 0) {
@@ -130,13 +134,12 @@ async function _myenrichHTMLasync(wrapped, content, options) {
 						let dot = extratext.indexOf('.');
 						if (dot > 0) extratext = extratext.slice(0,dot+1);
 					}
-					extratext = `<span class="inlineDocument inline${doctype}">` + extratext + '</span>';
 				} else if (DisplayAmount === DISPLAY_ALL) {
 					// More than one paragraph, so put it in a DIV
-					extratext = `<div class="inlineDocument inline${doctype}">` + extratext + '</div>';
+					element = 'div';
 				} else {
 					let p1 = extratext.indexOf('<p>');
-					let p2 = extratext.indexOf('</p>');
+					let p2 = extratext.indexOf('</p>', p1);
 					// Reduce to only first paragraph - it might not be at the very start of the text
 					extratext = extratext.slice(p1+3,p2);
 					if (DisplayAmount === DISPLAY_SENTENCE) {
@@ -144,8 +147,8 @@ async function _myenrichHTMLasync(wrapped, content, options) {
 						let dot = extratext.indexOf('.');
 						if (dot > 0) extratext = extratext.slice(0,dot+1);	
 					}
-					extratext = `<span class="inlineDocument inline${doctype}">` + extratext + '</span>';
 				}
+				extratext = `<${element} class="${InlineStyle} inline${element} inline${doctype}">${extratext}</${element}>`;
 			}
 		}
 
@@ -218,4 +221,21 @@ Hooks.once('init', () => {
 		}
 	});
 	DisplayAmount = +game.settings.get(MODULE_NAME, 'DisplayAmount');
+
+	game.settings.register(MODULE_NAME, 'InlineStyle', {
+		name: game.i18n.localize(`INLINELINKTEXT.InlineStyleTitle`),
+		hint: game.i18n.localize(`INLINELINKTEXT.InlineStyleHint`),
+		scope: 'world',
+		config: true,
+		type: String,
+		choices: {
+			[STYLE_DEFAULT] : game.i18n.localize(`INLINELINKTEXT.STYLE_DEFAULT`),
+			[STYLE_NONE]    : game.i18n.localize(`INLINELINKTEXT.STYLE_NONE`),
+		},
+		default: STYLE_DEFAULT,
+		onChange : value => {
+			InlineStyle = value
+		}
+	});
+	InlineStyle = game.settings.get(MODULE_NAME, 'InlineStyle');
 })

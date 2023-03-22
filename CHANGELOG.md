@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.8.0
+
+- Provide a configuration option where the style of inlined text can be chosen. The current options are "Default" (light green), and "None".
+- Reworked the inclusion code to remove duplicated code.
+- Update compatibility flag to "10.291".
+
 ## 0.7.1
 
 - Ensure that relative `@UUID` links work in Foundry V10

@@ -25,7 +25,9 @@ In the module settings, you can define which field is read from each document ty
 
 When first enabled, the default settings for the world's game system will be loaded. The game systems with specific default settings are: cyphersystem, pf1, pf2e, dnd5e
 
-If the field is left blank, then the default value will be reinstated (this is useful when migrating from Foundry V9 to V10)
+If the field is left blank, then the default value will be reinstated (this is useful when migrating from Foundry V9 to V10).
+
+It is also possible to switch between the default method of marking inline code (light green background) and no highlighting.
 
 ## Support Your System
 
