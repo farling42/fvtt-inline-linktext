@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.8.1
+
+- Fix the SENTENCE option so that `@UUID` links (and other links containing periods) in the first sentence are handled correctly.
+- Assume end of sentence is one of: period, question mark, exclamation mark.
+
 ## 0.8.0
 
 - Provide a configuration option where the style of inlined text can be chosen. The current options are "Default" (light green), and "None".

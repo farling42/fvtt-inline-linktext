@@ -58,6 +58,15 @@ function findSection(html,sectionid) {
 	return result;
 }
 
+const SENTENCE_REGEXP = /^(@\w+\[.+?\]\{.+?\}|.)+?[.?!]/;
+
+function firstSentence(value) {
+	// Don't use '.' inside a link request
+	const found = value.match(SENTENCE_REGEXP);
+	if (!found) return value;
+	return found[0];
+}
+
 /**
  * For any link in the text which points to a document which is not visible to the current player
  * it will be replaced by the non-link text (so the player will be NOT aware that a link exists)
@@ -131,8 +140,7 @@ async function _myenrichHTMLasync(wrapped, content, options) {
 					// A single paragraph, so put it in a single span
 					extratext = extratext.slice(3, -4);
 					if (DisplayAmount == DISPLAY_SENTENCE) {
-						let dot = extratext.indexOf('.');
-						if (dot > 0) extratext = extratext.slice(0,dot+1);
+						extratext = firstSentence(extratext)
 					}
 				} else if (DisplayAmount === DISPLAY_ALL) {
 					// More than one paragraph, so put it in a DIV
@@ -143,9 +151,7 @@ async function _myenrichHTMLasync(wrapped, content, options) {
 					// Reduce to only first paragraph - it might not be at the very start of the text
 					extratext = extratext.slice(p1+3,p2);
 					if (DisplayAmount === DISPLAY_SENTENCE) {
-						// Reduce to only first sentence
-						let dot = extratext.indexOf('.');
-						if (dot > 0) extratext = extratext.slice(0,dot+1);	
+						extratext = firstSentence(extratext)
 					}
 				}
 				extratext = `<${element} class="${InlineStyle} inline${element} inline${doctype}">${extratext}</${element}>`;
