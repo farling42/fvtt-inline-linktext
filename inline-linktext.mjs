@@ -76,6 +76,7 @@ function firstSentence(value) {
 async function _myenrichHTMLasync(wrapped, content, options) {
 	// Replace all occurrences of @inlineDocument[...]{...]} to @Document[...]{...}<+ text from referenced document>
 	// Outer while loop caters for processing of nested @inline statements
+	if (typeof content === "string")
 	while (content?.includes('@inline'))
 	{
 		const regex = /@inline([a-zA-Z]+)\[([a-zA-Z0-9.-]+)\]{[^}]+}/;

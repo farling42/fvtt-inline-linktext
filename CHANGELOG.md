@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.8.2
+
+- Fix an error being reported when a number is passed into enrichHTML rather than a string.
+
 ## 0.8.1
 
 - Fix the SENTENCE option so that `@UUID` links (and other links containing periods) in the first sentence are handled correctly.
