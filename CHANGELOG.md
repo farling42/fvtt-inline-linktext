@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.9.0
+
+- Add compatibility with Foundry 11 (299)
+
 ## 0.8.2
 
 - Fix an error being reported when a number is passed into enrichHTML rather than a string.

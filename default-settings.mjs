@@ -77,6 +77,7 @@ const fvtt_10_settings = {
 const settings = {
     "9"  : fvtt_9_settings,
     "10" : fvtt_10_settings, 
+    "11" : fvtt_10_settings, 
 }
 
 const default_settings = {
@@ -88,6 +89,14 @@ const default_settings = {
 	    "Scene"        : "name",
     },
     "10" : {
+	    "Actor"        : "system.description",
+	    "Item"         : "system.description",
+	    "JournalEntry" : "pages.contents.0.text.content",
+	    "JournalEntryPage" : "text.content",
+	    "RollTable"    : "description",
+	    "Scene"        : "name",
+    },
+    "11" : {
 	    "Actor"        : "system.description",
 	    "Item"         : "system.description",
 	    "JournalEntry" : "pages.contents.0.text.content",
