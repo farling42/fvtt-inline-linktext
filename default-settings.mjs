@@ -78,6 +78,7 @@ const settings = {
     "9"  : fvtt_9_settings,
     "10" : fvtt_10_settings, 
     "11" : fvtt_10_settings, 
+    "12" : fvtt_10_settings, 
 }
 
 const default_settings = {
@@ -87,26 +88,20 @@ const default_settings = {
 	    "JournalEntry" : "data.content",
 	    "RollTable"    : "description",
 	    "Scene"        : "name",
-    },
-    "10" : {
-	    "Actor"        : "system.description",
-	    "Item"         : "system.description",
-	    "JournalEntry" : "pages.contents.0.text.content",
-	    "JournalEntryPage" : "text.content",
-	    "RollTable"    : "description",
-	    "Scene"        : "name",
-    },
-    "11" : {
-	    "Actor"        : "system.description",
-	    "Item"         : "system.description",
-	    "JournalEntry" : "pages.contents.0.text.content",
-	    "JournalEntryPage" : "text.content",
-	    "RollTable"    : "description",
-	    "Scene"        : "name",
     }
+}
+
+// base for V10, V11, V12 onwards
+const base_default_settings = {
+    "Actor"        : "system.description",
+    "Item"         : "system.description",
+    "JournalEntry" : "pages.contents.0.text.content",
+    "JournalEntryPage" : "text.content",
+    "RollTable"    : "description",
+    "Scene"        : "name",
 }
 
 export default function defaultSettings() {
     let ver = game.version.split('.')[0];
-    return settings[ver]?.[game.system.id] || default_settings[ver];
+    return settings[ver]?.[game.system.id] || default_settings[ver] || base_default_settings;
 }

@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.10.0
+
+- Add no upper limit to the version supported internally (so that it might work on V12).
+
 ## 0.9.0
 
 - Add compatibility with Foundry 11 (299)
