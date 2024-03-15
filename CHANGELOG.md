@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.11.0
+
+- Use standard Foundry V10 enrichers interface to support how the module does it's stuff. Note that in V12 the `@Embed` hook will work for embedding a complete journal page into a page, but doesn't have the flexibility that this module provides.
+- Rework as a standard enricher, so that libWrapper is no longer required.
+- KNOWN BUG: When "Amount to Display" is set to "All", then an extra blank line (an empty paragraph) appears after the inserted text.
+
 ## 0.10.0
 
 - Add no upper limit to the version supported internally (so that it might work on V12).

@@ -8,26 +8,26 @@ import defaultSettings from './default-settings.mjs';
 const MODULE_NAME = 'inline-linktext';
 
 const _EntityMap = {
-	"JournalEntry" : "journal",
-	"Actor"        : "actors",
-	"RollTable"    : "tables",
-	"Scene"        : "scenes",
-	"Item"         : "items",
+	"JournalEntry": "journal",
+	"Actor": "actors",
+	"RollTable": "tables",
+	"Scene": "scenes",
+	"Item": "items",
 };
 
 let FieldOfDocument = {};
 
-const DISPLAY_SENTENCE  = 0;
+const DISPLAY_SENTENCE = 0;
 const DISPLAY_PARAGRAPH = 1;
-const DISPLAY_ALL       = 2;
+const DISPLAY_ALL = 2;
 let DisplayAmount = DISPLAY_ALL;
 
 const STYLE_DEFAULT = "inlineDocument";
-const STYLE_NONE    = "inlineNone";
-let InlineStyle     = STYLE_DEFAULT;
+const STYLE_NONE = "inlineNone";
+let InlineStyle = STYLE_DEFAULT;
 
-function findSection(html,sectionid) {
-	let result="";
+function findSection(html, sectionid) {
+	let result = "";
 	if (html.hasChildNodes()) {
 		let children = html.childNodes;
 		let foundtag;
@@ -51,7 +51,7 @@ function findSection(html,sectionid) {
 				foundtag = node.tagName;
 			} else {
 				let text = findSection(node, sectionid);
-				if (text.length>0) return text;
+				if (text.length > 0) return text;
 			}
 		}
 	}
@@ -73,113 +73,94 @@ function firstSentence(value) {
  * @param {string} [content]  unicode string as stored in db
  * @param {Object} [options]  Data for renderJournalSheet and renderActorSheet hooks
  */
-async function _myenrichHTMLasync(wrapped, content, options) {
+async function enricher(match, options) {
 	// Replace all occurrences of @inlineDocument[...]{...]} to @Document[...]{...}<+ text from referenced document>
 	// Outer while loop caters for processing of nested @inline statements
-	if (typeof content === "string")
-	while (content?.includes('@inline'))
+
+	const [matching, linktype, docid, hash, label] = match;	// full matching string
+
+	let doc;
+	if (linktype === 'UUID') {
+		// Foundry V10 contains @UUID[Item.id] or a relative link as UUID[.Item.id]
+		// Optional #page at end
+		doc = await fromUuid(docid, options?.relativeTo);
+	}
+	else if (linktype == 'Compendium') {
+		doc = await fromUuid(`Compendium.${docid}`);  // always an absolute id
+	} else {
+		// V9-style link format
+		const table = _EntityMap[linktype];
+		if (table) doc = game[table]?.get(docid);
+	}
+
+	// Foundry doesn't read match[0], which has `@inlineDocument[xxx]`
+	let link = await TextEditor._createContentLink(match, options);
+	if (doc)
 	{
-		const regex = /@inline([a-zA-Z]+)\[([a-zA-Z0-9.-]+)\]{[^}]+}/;
-		const regex10 = /@inline([a-zA-Z]+)\[([a-zA-Z0-9.-]+)#([a-zA-Z0-9.-]+)\]{[^}]+}/;
-		let found = content.match(regex);
-		let section;
-		if (!found) {
-			found = content.match(regex10);
-			if (!found) break;
-			section = found[3];
+		let doctype = doc.documentName;  // Get the type of "doc"
+
+		// We can't access 'pages.contents.0' with getProperty
+		if (doctype == 'JournalEntry' && doc.pages && FieldOfDocument[doctype].startsWith('pages.contents')) {
+			doctype = 'JournalEntryPage';
+			doc = doc.pages.contents[0];
 		}
 
-		const matching = found[0];	// full matching string
-		const linktype = found[1];	// the type of document that has been inlined
-		const docid    = found[2];	// the ID of the thing that is being inline
-		let doc;
-		if (linktype === 'UUID') {
-			// Foundry V10 contains @UUID[Item.id] or a relative link as UUID[.Item.id]
-			// Optional #page at end
-			doc = await fromUuid(docid, options?.relativeTo);
-		}
-		else if (linktype == 'Compendium') {
-			doc = await fromUuid(`Compendium.${docid}`);  // always an absolute id
-		} else {
-			// V9-style link format
-			const table = _EntityMap[linktype];
-			if (table) doc = game[table]?.get(docid);
-		}
-
-		let extratext="";
-		if (doc) {
-			let doctype = doc.documentName;  // Get the type of "doc"
-
-			// We can't access 'pages.contents.0' with getProperty
-			if (doctype == 'JournalEntry' && doc.pages && FieldOfDocument[doctype].startsWith('pages.contents')) {
-				doctype = 'JournalEntryPage';
-				doc = doc.pages.contents[0];
+		const propvalue = foundry.utils.getProperty(doc, FieldOfDocument[doctype]);
+		if (propvalue?.length > 0) {
+			let extratext = propvalue;
+			// Find the correct anchor
+			if (hash) {
+				// Search extratext for any heading whose converted value matches anchor
+				// 'anchor' is always lower case with "-" instead of spaces
+				// JournalEntryPage.slugifyHeading(heading: string | HTMLHeadingElement): string
+				const htmlbase = document.createElement('template');
+				htmlbase.innerHTML = extratext;
+				extratext = findSection(htmlbase.content, hash);
+				if (extratext.length == 0) {
+					console.warn(`Failed to find section id ${hash} within:\n${extratext}`)
+				}
 			}
 
-			const propvalue = getProperty(doc, FieldOfDocument[doctype]);
-			if (propvalue?.length > 0) {
-				extratext = propvalue;
-				// Find the correct section
-				if (section) {
-					// Search extratext for any heading whose converted value matches section
-					// 'section' is always lower case with "-" instead of spaces
-					// JournalEntryPage.slugifyHeading(heading: string | HTMLHeadingElement): string
-					const htmlbase = document.createElement('template');
-					htmlbase.innerHTML = extratext;
-					extratext = findSection(htmlbase.content, section);
-					if (extratext.length == 0) {
-						console.warn(`Failed to find section id ${section} within:\n${extratext}`)
-					}
-				}
-
-				let element = 'span';
-				if (!extratext.startsWith('<')) {
-					// No HTML formatting, so put it in a single span
-				} else if (extratext.startsWith('<p>') && 
-						extratext.endsWith('</p>') &&
-					 	extratext.lastIndexOf('<p>') === 0) {
-					// A single paragraph, so put it in a single span
-					extratext = extratext.slice(3, -4);
-					if (DisplayAmount == DISPLAY_SENTENCE) {
-						extratext = firstSentence(extratext)
-					}
-				} else if (DisplayAmount === DISPLAY_ALL) {
-					// More than one paragraph, so put it in a DIV
-					element = 'div';
-				} else {
-					let p1 = extratext.indexOf('<p>');
-					let p2 = extratext.indexOf('</p>', p1);
-					// Reduce to only first paragraph - it might not be at the very start of the text
-					extratext = extratext.slice(p1+3,p2);
-					if (DisplayAmount === DISPLAY_SENTENCE) {
-						extratext = firstSentence(extratext)
-					}
-				}
-				extratext = `<${element} class="${InlineStyle} inline${element} inline${doctype}">${extratext}</${element}>`;
+			let element = 'span';
+			if (!extratext.startsWith('<')) {
+				// No HTML formatting, so put it in a single span
+			} else if (extratext.startsWith('<p>') &&
+				extratext.endsWith('</p>') &&
+				extratext.lastIndexOf('<p>') === 0) {
+				// A single paragraph, so put it in a single span
+				extratext = extratext.slice(3, -4);
+			} else if (DisplayAmount === DISPLAY_ALL) {
+				// More than one paragraph, so put it in a DIV
+				element = 'div';
+			} else {
+				let p1 = extratext.indexOf('<p>');
+				let p2 = extratext.indexOf('</p>', p1);
+				// Reduce to only first paragraph - it might not be at the very start of the text
+				extratext = extratext.slice(p1 + 3, p2);
 			}
+			if (DisplayAmount === DISPLAY_SENTENCE) {
+				extratext = firstSentence(extratext)
+			}
+			// Foundry sanitises if element is a DIV, to ensure it occurs AFTER the paragraph containing the link.
+			// TODO: an extra blank line appears AFTER the inserted text for DISPLAY_ALL.
+			let spanouter = document.createElement("span");
+			let spaninner = document.createElement(element);
+			spaninner.classList.add(`${InlineStyle}`, `inline${element}`, `inline${doctype}`);
+			spaninner.innerHTML = await TextEditor.enrichHTML(extratext, options);
+			spanouter.append(link, spaninner);
+			//return spanouter.children;  // only appears as [object HTMLCollection]
+			return spanouter;
 		}
-
-		// Put just the base link type into the content string.
-		content = content.replace(matching, '@' + matching.slice(7) + extratext);
 	}
 
-	// Finally, process the result into pure HTML
-	return wrapped(content, options);	
-}
-
-// Non-async outer wrapper just in case enrichHTML is called with (async=false)
-function _myenrichHTML(wrapped, content, options) {
-	if (options.async)
-		// Pass the enclosing promise back to the caller
-		return _myenrichHTMLasync(wrapped, content, options);
-	else {
-		console.warn('inline-linktext can NOT process calls to enrichHTML which are not async');
-		return wrapped(content, options);
-	}
+	return link;
 }
 
 Hooks.once('ready', () => {
-	libWrapper.register('inline-linktext', 'TextEditor.enrichHTML', _myenrichHTML, 'WRAPPER');
+	// pattern = same as found in foundry.js:_enrichContentLinks
+	const documentTypes = CONST.DOCUMENT_LINK_TYPES.concat(["Compendium", "UUID"]);
+	const pattern = new RegExp(`@inline(${documentTypes.join("|")})\\[([^#\\]]+)(?:#([^\\]]+))?](?:{([^}]+)})?`, "g");
+	CONFIG.TextEditor.enrichers.push({ pattern, enricher });
 })
 
 
@@ -198,9 +179,9 @@ Hooks.once('init', () => {
 			config: true,
 			default: default_settings[k],
 			type: String,
-			onChange: value => { 
+			onChange: value => {
 				if (value)
-					FieldOfDocument[k] = value 
+					FieldOfDocument[k] = value
 				else {
 					// If left blank, use the default value
 					value = default_settings[k];
@@ -218,13 +199,13 @@ Hooks.once('init', () => {
 		config: true,
 		type: String,
 		choices: {
-			[DISPLAY_ALL]       : game.i18n.localize(`INLINELINKTEXT.DISPLAY_ALL`),
-			[DISPLAY_PARAGRAPH] : game.i18n.localize(`INLINELINKTEXT.DISPLAY_PARAGRAPH`),
-			[DISPLAY_SENTENCE]  : game.i18n.localize(`INLINELINKTEXT.DISPLAY_SENTENCE`),
+			[DISPLAY_ALL]: game.i18n.localize(`INLINELINKTEXT.DISPLAY_ALL`),
+			[DISPLAY_PARAGRAPH]: game.i18n.localize(`INLINELINKTEXT.DISPLAY_PARAGRAPH`),
+			[DISPLAY_SENTENCE]: game.i18n.localize(`INLINELINKTEXT.DISPLAY_SENTENCE`),
 		},
 		default: DISPLAY_ALL,
-		onChange : value => { 
-			DisplayAmount = +value 
+		onChange: value => {
+			DisplayAmount = +value
 		}
 	});
 	DisplayAmount = +game.settings.get(MODULE_NAME, 'DisplayAmount');
@@ -236,11 +217,11 @@ Hooks.once('init', () => {
 		config: true,
 		type: String,
 		choices: {
-			[STYLE_DEFAULT] : game.i18n.localize(`INLINELINKTEXT.STYLE_DEFAULT`),
-			[STYLE_NONE]    : game.i18n.localize(`INLINELINKTEXT.STYLE_NONE`),
+			[STYLE_DEFAULT]: game.i18n.localize(`INLINELINKTEXT.STYLE_DEFAULT`),
+			[STYLE_NONE]: game.i18n.localize(`INLINELINKTEXT.STYLE_NONE`),
 		},
 		default: STYLE_DEFAULT,
-		onChange : value => {
+		onChange: value => {
 			InlineStyle = value
 		}
 	});

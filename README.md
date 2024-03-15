@@ -29,6 +29,10 @@ If the field is left blank, then the default value will be reinstated (this is u
 
 It is also possible to switch between the default method of marking inline code (light green background) and no highlighting.
 
+## Foundry V12
+
+Foundry V12 provides an `@Embed` tag, but it does not support the insertion of only the first sentence or paragraph from the linked document, and it only supports embedding information from text or img journal pages.
+
 ## Support Your System
 
 If your preferred game system is not directly supported, then raise an issue at https://github.com/farling42/fvtt-inline-linktext/issues and I will see what I can do about that. (If you can provide your configured data field settings then that would be even better.)
