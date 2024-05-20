@@ -33,6 +33,8 @@ It is also possible to switch between the default method of marking inline code 
 
 Foundry V12 provides an `@Embed` tag, but it does not support the insertion of only the first sentence or paragraph from the linked document, and it only supports embedding information from text or img journal pages.
 
+You could have a look at my new module, [Extra Embed Options](https://github.com/farling42/fvtt-extra-embed) to see if that is more suitable for your needs.
+
 ## Support Your System
 
 If your preferred game system is not directly supported, then raise an issue at https://github.com/farling42/fvtt-inline-linktext/issues and I will see what I can do about that. (If you can provide your configured data field settings then that would be even better.)
