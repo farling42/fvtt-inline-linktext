@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.11.1
+
+- Mark as compatible with Foundry V13.
+
 ## 0.11.0
 
 - Use standard Foundry V10 enrichers interface to support how the module does it's stuff. Note that in V12 the `@Embed` hook will work for embedding a complete journal page into a page, but doesn't have the flexibility that this module provides.
